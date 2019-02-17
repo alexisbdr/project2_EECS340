@@ -12,6 +12,10 @@ class DNS_proxy:
 	DNS_IP = '8.8.8.8' #Google IP
 	
 	def __init__(self):
+		thread.start_new_thread(self.open_UDP)
+		thread.start_new_thread(self.open_TCP)
+			
+	def open_UDP(self):
 		try: 
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			self.sock.bind((self.host, self.port))
@@ -20,6 +24,15 @@ class DNS_proxy:
 
 		self.listen_for_dns_queries()
 
+	def open_TCP(self):
+		try: 
+			self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			self.sock.bind((self.host, self.port))
+		except (Exception) as e: 
+			self.shutdown_with_error(str(e))
+
+		self.listen_for_dns_queries()
+		
 	def listen_for_dns_queries(self):
 		try: 
 			while True: 
