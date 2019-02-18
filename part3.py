@@ -1,4 +1,5 @@
-import signal, socket, sys, thread
+import select, signal, socket, sys, thread
+from struct import * 
 
 def signal_handler(signal, frame):
     sys.stderr.write("Keyboard Interrupt, exiting")
@@ -7,16 +8,24 @@ def signal_handler(signal, frame):
 class DNS_proxy:
 	
 	port = 53
-	host =""
+	host ='127.0.0.1'
 	CHUNK_SIZE = 4096
 	DNS_IP = '8.8.8.8' #Google IP
 	
 	def __init__(self):
 		try: 
 			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.udp_sock.bind((self.host, self.port))
+			self.udp_sock.setblocking(0)
+
+			self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.tcp_sock.bind((self.host, self.port))
+			self.tcp_sock.listen(1)
+
+			self.tcp_sock.setblocking(0)
+
+			self.sockets = [self.tcp_sock, self.udp_sock]
+			
 		except (Exception) as e: 
 			self.shutdown_with_error(str(e))
 
@@ -25,34 +34,42 @@ class DNS_proxy:
 	def listen_for_dns_queries(self):
 		try: 
 			while True: 
-				udp_data, udp_addr = self.udp_sock.recvfrom(self.CHUNK_SIZE)
-				if udp_data: 
-					print("UDP")
-					thread.start_new_thread(self.handle_udp, (udp_data, udp_data))
-				tcp_data, tcp_addr = self.tcp_sock.recvfrom(self.CHUNK_SIZE)
-				if tcp_data: 
-					print("TCP")
-					thread.start_new_thread(self.handle_tcp, (tcp_data, tcp_data))
-					
+				ready_read, ready_write, exceptional = select.select(self.sockets, [], [], None)
+				for sock in ready_read:
+					if int(sock.type) == 1:
+						self.handle_tcp(sock)
+					if int(sock.type) == 2: 
+						self.handle_udp(sock)
+
 		except (KeyboardInterrupt, SystemExit) as e: 
 			self.shutdown_with_error(str(e))
 
-	def handle_udp(self, data, addr):
-		print(data)
-		dns_data = self.send_upstream(data)
+	def handle_udp(self, sock):
+		data, addr = sock.recvfrom(self.CHUNK_SIZE)
+		dns_data = self.send_upstream(data, 1)
 		print(dns_data)
-		self.sock.sendto(dns_data, addr)
-	
-	def handle(tcp, data, addr):
+		sock.sendto(dns_data, addr)
 		
-		dns_data = self.send_upstream(data)
+	def handle_tcp(self, sock):
+		print("TCP")
+		conn, addr = sock.accept()
+		message = conn.recv(2)
+		message_size = unpack("!H", message)[0]
+		while message_size: 
+			data = conn.recv(1024)
+			message += data
+			message_size -= len(data)
+		print(message)
+		dns_data = self.send_upstream(message, 0)
 		print(dns_data)
-		self.sock.sendto(dns_data, addr)
-
-	
+		conn.sendto(dns_data, addr)
+			
 	#threadless and loopless for now - could be interesting to run this in the background
-	def send_upstream(self, data):
-		up_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	def send_upstream(self, data, flag):
+		if flag: 
+			up_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		else: 
+			up_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		up_sock.connect((self.DNS_IP,self.port))
 		up_sock.send(data)
 		rec_data = up_sock.recv(self.CHUNK_SIZE)
