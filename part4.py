@@ -1,4 +1,4 @@
-import select, signal, socket, sys, thread
+import select, signal, socket, sys, thread, binascii
 from struct import *
 
 def signal_handler(signal, frame):
@@ -8,8 +8,9 @@ def signal_handler(signal, frame):
 class DNS_proxy:
 
 	port = 53
-	host ='127.0.0.1'
+	host = socket.gethostbyname(socket.gethostname())
 	CHUNK_SIZE = 4096
+	DNS_QUERY_MESSAGE_HEADER = Struct("!3H")
 	DNS_IP = '8.8.8.8' #Google IP
 
 	def __init__(self):
@@ -21,7 +22,6 @@ class DNS_proxy:
 			self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.tcp_sock.bind((self.host, self.port))
 			self.tcp_sock.listen(1)
-
 			self.tcp_sock.setblocking(0)
 
 			self.sockets = [self.tcp_sock, self.udp_sock]
@@ -36,17 +36,30 @@ class DNS_proxy:
 			while True:
 				ready_read, ready_write, exceptional = select.select(self.sockets, [], [], None)
 				for sock in ready_read:
-					if int(sock.type) == 1:
+					if sock is self.tcp_sock:
 						self.handle_tcp(sock)
-					if int(sock.type) == 2:
+					elif sock is self.udp_sock:
 						self.handle_udp(sock)
 
 		except (KeyboardInterrupt, SystemExit) as e:
 			self.shutdown_with_error(str(e))
 
+
+	def no_such_name(self, message, rcode_index):
+		rcode_digit = self.DNS_QUERY_MESSAGE_HEADER.unpack_from(message)[rcode_index]
+		rcode_digit_hex = hex(rcode_digit)[-1]
+		print(rcode_digit_hex)
+		if rcode_digit_hex == "0":
+			return message
+		elif rcode_digit_hex == "3":
+			# return binascii.unhexi
+			return self.host
+
 	def handle_udp(self, sock):
+		print("UDP")
 		data, addr = sock.recvfrom(self.CHUNK_SIZE)
 		dns_data = self.send_upstream(data, 1)
+		dns_data = self.no_such_name(dns_data, 1)
 		print(dns_data)
 		sock.sendto(dns_data, addr)
 
@@ -59,8 +72,8 @@ class DNS_proxy:
 			data = conn.recv(1024)
 			message += data
 			message_size -= len(data)
-		print(message)
 		dns_data = self.send_upstream(message, 0)
+		dns_data = self.no_such_name(dns_data, 2)
 		print(dns_data)
 		conn.sendto(dns_data, addr)
 
@@ -73,7 +86,6 @@ class DNS_proxy:
 		up_sock.connect((self.DNS_IP,self.port))
 		up_sock.send(data)
 		rec_data = up_sock.recv(self.CHUNK_SIZE)
-
 		return rec_data
 
 	def shutdown_with_error(self, error):
