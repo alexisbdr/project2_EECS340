@@ -12,22 +12,11 @@ class DNS_proxy:
 	DNS_IP = '8.8.8.8' #Google IP
 	
 	def __init__(self):
-		thread.start_new_thread(self.open_UDP)
-		thread.start_new_thread(self.open_TCP)
-			
-	def open_UDP(self):
 		try: 
-			self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.sock.bind((self.host, self.port))
-		except (Exception) as e: 
-			self.shutdown_with_error(str(e))
-
-		self.listen_for_dns_queries()
-
-	def open_TCP(self):
-		try: 
-			self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.sock.bind((self.host, self.port))
+			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.udp_sock.bind((self.host, self.port))
+			self.tcp_sock.bind((self.host, self.port))
 		except (Exception) as e: 
 			self.shutdown_with_error(str(e))
 
@@ -36,14 +25,29 @@ class DNS_proxy:
 	def listen_for_dns_queries(self):
 		try: 
 			while True: 
-				data,addr = self.sock.recvfrom(self.CHUNK_SIZE)
-				if data: 
-					print(data)
-					dns_data = self.send_upstream(data)
-					print(dns_data)
-					self.sock.sendto(dns_data, addr)
+				udp_data, udp_addr = self.udp_sock.recvfrom(self.CHUNK_SIZE)
+				if udp_data: 
+					print("UDP")
+					thread.start_new_thread(self.handle_udp, (udp_data, udp_data))
+				tcp_data, tcp_addr = self.tcp_sock.recvfrom(self.CHUNK_SIZE)
+				if tcp_data: 
+					print("TCP")
+					thread.start_new_thread(self.handle_tcp, (tcp_data, tcp_data))
+					
 		except (KeyboardInterrupt, SystemExit) as e: 
 			self.shutdown_with_error(str(e))
+
+	def handle_udp(self, data, addr):
+		print(data)
+		dns_data = self.send_upstream(data)
+		print(dns_data)
+		self.sock.sendto(dns_data, addr)
+	
+	def handle(tcp, data, addr):
+		
+		dns_data = self.send_upstream(data)
+		print(dns_data)
+		self.sock.sendto(dns_data, addr)
 
 	
 	#threadless and loopless for now - could be interesting to run this in the background
@@ -57,7 +61,8 @@ class DNS_proxy:
 
 	def shutdown_with_error(self, error):
 		sys.stderr.write(error)
-		self.sock.shutdown(socket.SHUT_RDWR)
+		self.tcp_sock.shutdown(socket.SHUT_RDWR)
+		self.udp_sock.shutdown(socket.SHUT_RDWR)
 		sys.exit(1)
 
 if __name__ == "__main__": 
