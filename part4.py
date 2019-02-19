@@ -15,6 +15,7 @@ class DNS_proxy:
 
 	def __init__(self):
 		try:
+
 			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			self.udp_sock.bind((self.host, self.port))
 			self.udp_sock.setblocking(0)
@@ -46,14 +47,56 @@ class DNS_proxy:
 
 
 	def no_such_name(self, message, rcode_index):
-		rcode_digit = self.DNS_QUERY_MESSAGE_HEADER.unpack_from(message)[rcode_index]
+		response = self.DNS_QUERY_MESSAGE_HEADER.unpack_from(message)
+		rcode_digit = response[rcode_index]
 		rcode_digit_hex = hex(rcode_digit)[-1]
-		print(rcode_digit_hex)
+
+		response2 = None
+		counter = 4
+		fmt = "!4H"
+		while True:
+			try:
+				response2 = unpack_from(fmt, message)
+				counter += 1
+				fmt = "!" + str(counter) + "H"
+			except:
+				break
+
+		print(response2)
+		host_split = str(self.host).split('.')
+		host_hexSplit = []
+		host_hex_string = ""
+		for numberIndex in range(len(host_split)):
+			number = host_split[numberIndex]
+			ans = hex(int(number))
+			host_hexSplit.append(ans)
+			if len(ans) == 3:
+				host_hex_string += "0" + ans[2] # add spaces between entries
+				# something
+			elif len(ans) == 4:
+				host_hex_string += ans[2:]
+			if numberIndex < len(host_split) - 1:
+				host_hex_string += " "
+
 		if rcode_digit_hex == "0":
 			return message
 		elif rcode_digit_hex == "3":
-			# return binascii.unhexi
-			return self.host
+			print("enter 3 digits hex")
+			response2_lst = list(response2)
+			response2_lst[rcode_index] = 33152
+			if len(host_hexSplit) == 4:
+				first = int(str(host_hexSplit[0][2:] + host_hexSplit[1][2:]), 16)
+				second = int(str(host_hexSplit[2][2:] + host_hexSplit[3][2:]), 16)
+				response2_lst[-2] = first
+				response2_lst[-1] = second
+
+			response2 = tuple(response2_lst)
+			new_ans = ""
+			for val in response2:
+				new_ans += pack("!H", val)
+
+			print(response2)
+			return new_ans
 
 	def handle_udp(self, sock):
 		print("UDP")
