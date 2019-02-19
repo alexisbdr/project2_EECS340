@@ -14,7 +14,7 @@ class DNS_proxy:
 	DNS_IP = '8.8.8.8' #Google IP
 
 	def __init__(self):
-		self.host = int(sys.argv[1])
+		self.host = str(sys.argv[1])
 		try:
 
 			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
