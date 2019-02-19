@@ -7,7 +7,7 @@ def signal_handler(signal, frame):
 class DNS_proxy:
 	
 	port = 53
-	host =""
+	host = socket.gethostbyname(socket.gethostname())
 	CHUNK_SIZE = 4096
 	DNS_IP = '8.8.8.8' #Google IP
 	
