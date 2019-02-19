@@ -12,12 +12,7 @@ def signal_handler(sig, frame):
 	sock.shutdown()
 
 
-def generate_http_header(code, path):
-
-	responses = {
-	200: '200 OK',
-	403: '403 Forbidden',
-	404: '404 Not Found'}
+def generate_http_header(code, host):
 
 	http_header = 'HTTP/1.1 ' + responses[code] + '\n'
 
@@ -34,30 +29,16 @@ def generate_http_header(code, path):
 	connection_close = 'Connection: Close' + CLRF
 	http_header+=connection_close
 
-	print(http_header)
-
 	return http_header
 
 
-def generate_http_response(code, path):
+def generate_http_response(code, host_name):
 
-	response_header = generate_http_header(code, path)
+	response_header = generate_http_header(code, host_name)
 
-	if code == 200:
-		try:
-			file = open(path, 'r')
-			response_body = file.read()
-		except:
-			#If failure, 404 Not Found
-			generate_http_response(404, path)
-
-	elif code == 403:
-
-		response_body = "<html><body><p>Error 403: Forbidden</p>"
-
-	elif code == 404:
-
-		response_body = "<html><body><p>Error 404: Not Found</p>"
+	response_body = "<html><body><p>You will never find"
+	response_body += str(host_name)
+	response_body += "come have fun at https://theuselessweb.com/ </p>"
 
 	response = response_header + response_body
 
@@ -69,11 +50,12 @@ def get_host(data):
 	http_header = data.split(CRLF,1)[0].split('\n')
 	print(http_header)
 	for line in http_header:
-		if line[0:8] == 'Location':
+		if line[0:3] == 'Host':
 			break
-	redirect_url = line.split()[1]
+	host = line.split()[1]
+	print(host)
 
-	return redirect_url
+	return host
 
 def get_request_method(data):
 
@@ -147,7 +129,7 @@ class Socket:
 
 					http_host = get_host(data)
 					
-					http_response = generate_http_response(200, )
+					http_response = generate_http_response(200, http_host)
 
 					client_socket.send(http_response)
 
