@@ -36,9 +36,9 @@ def generate_http_response(code, host_name):
 
 	response_header = generate_http_header(code, host_name)
 
-	response_body = "<html><body><p>You will never find"
+	response_body = "<html><body><p>You will never find "
 	response_body += str(host_name)
-	response_body += "come have fun at https://theuselessweb.com/ </p>"
+	response_body += " ,come have fun at https://theuselessweb.com/ </p>"
 
 	response = response_header + response_body
 
@@ -52,7 +52,7 @@ def get_host(data):
 	http_header = data.split(CRLF,1)[0].split('\n')
 	print(http_header)
 	for line in http_header:
-		if line[0:3] == 'Host':
+		if line[0:4] == 'Host':
 			break
 	host = line.split()[1]
 	print(host)

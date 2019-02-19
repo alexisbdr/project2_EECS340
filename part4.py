@@ -26,6 +26,8 @@ class DNS_proxy:
 
 			self.sockets = [self.tcp_sock, self.udp_sock]
 
+			print(self.host)
+
 		except (Exception) as e:
 			self.shutdown_with_error(str(e))
 
@@ -53,7 +55,7 @@ class DNS_proxy:
 			return message
 		elif rcode_digit_hex == "3":
 			# return binascii.unhexi
-			return self.host
+			return binascii.hexlify(self.host)
 
 	def handle_udp(self, sock):
 		print("UDP")
