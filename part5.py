@@ -5,6 +5,7 @@ import os
 import time
 import signal
 
+CRLF = '\r\n\r\n'
 
 def signal_handler(sig, frame):
 
@@ -26,7 +27,7 @@ def generate_http_header(code, path):
 	server_name = 'Server: http_server1 (Simple)\n'
 	http_header += server_name
 
-	if code == 200
+	if code == 200:
 		http_header += 'Content-Type: text/html; charset=UTF-8\n'
 
 	CLRF = '\r\n\r\n'
@@ -64,7 +65,7 @@ def generate_http_response(code, path):
 
 
 def get_host(data):
-
+	
 	http_header = data.split(CRLF,1)[0].split('\n')
 	print(http_header)
 	for line in http_header:
