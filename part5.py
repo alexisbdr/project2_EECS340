@@ -42,6 +42,8 @@ def generate_http_response(code, host_name):
 
 	response = response_header + response_body
 
+	print(response)
+
 	return response
 
 
