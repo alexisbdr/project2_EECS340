@@ -14,7 +14,7 @@ def signal_handler(sig, frame):
 
 def generate_http_header(code, host):
 
-	http_header = 'HTTP/1.1 ' + responses[code] + '\n'
+	http_header = 'HTTP/1.1 200 OK \n'
 
 	current_date = 'Date: ' + time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime()) + ' GMT\n'
 	http_header += current_date
