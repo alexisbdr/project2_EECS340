@@ -23,15 +23,10 @@ def generate_http_header(code, path):
 	current_date = 'Date: ' + time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime()) + ' GMT\n'
 	http_header += current_date
 
-	'''
-	Last modified stuff
-	if code == 200:
-		last_modified_time = 'Last Modified: ' + get_last_modified_time(path) + ' GMT'
-	'''
 	server_name = 'Server: http_server1 (Simple)\n'
 	http_header += server_name
 
-	if code == 200:
+	if code == 200
 		http_header += 'Content-Type: text/html; charset=UTF-8\n'
 
 	CLRF = '\r\n\r\n'
@@ -68,10 +63,21 @@ def generate_http_response(code, path):
 	return response
 
 
+def get_host(data):
+
+	http_header = data.split(CRLF,1)[0].split('\n')
+	print(http_header)
+	for line in http_header:
+		if line[0:8] == 'Location':
+			break
+	redirect_url = line.split()[1]
+
+	return redirect_url
+
 def get_request_method(data):
 
 	http_header = data.split('\n')[0].split()
-
+	print(http_header)
 	if len(http_header) == 0:
 		return None
 
@@ -138,18 +144,9 @@ class Socket:
 
 				if data and get_request_method(data) == "GET":
 
-					file_name = get_file_name(data)
-
-					#Empty file path or file does not exist - Error 404 Not Found
-					if not file_name or not os.path.exists(file_name):
-						http_response = generate_http_response(404, file_name)
-
-					#Wrong file type - 403
-					elif ends_with_(file_name):
-						http_response = generate_http_response(403, file_name)
-
-					else:
-						http_response = generate_http_response(200, file_name)
+					http_host = get_host(data)
+					
+					http_response = generate_http_response(200, )
 
 					client_socket.send(http_response)
 
