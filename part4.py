@@ -8,7 +8,8 @@ def signal_handler(signal, frame):
 class DNS_proxy:
 
 	port = 53
-	host = socket.gethostbyname(socket.gethostname())
+	domain = 'www.abzdeqf.com'
+	host = None
 	CHUNK_SIZE = 4096
 	DNS_IP = '8.8.8.8' #Google IP
 
@@ -72,13 +73,20 @@ class DNS_proxy:
 		if rcode_digit_hex == "0":
 			return message
 		elif rcode_digit_hex == "3":
+			# if len(self.domain) % 2 != 0:
+				# add 'x' to self.domain and re run
 			response_lst = list(response)
 			if rcode_index == 2:
 				response_lst = response_lst[1:]
+			for hex_segment_index in range(len(host_hexSplit)):
+				hex_segment = host_hexSplit[hex_segment_index]
+				if len(hex_segment) == 3:
+					new_segment = "0x0" + hex_segment[2]
+					host_hexSplit[hex_segment_index] = new_segment
 			if len(host_hexSplit) == 4:
 				first = int(str(host_hexSplit[0][2:] + host_hexSplit[1][2:]), 16)
 				second = int(str(host_hexSplit[2][2:] + host_hexSplit[3][2:]), 16)
-				response_lst[-2] = first
+				response_lst[-2] = first # maybe different between even/odd, but not sure
 				response_lst[-1] = second
 
 			prevEntry = response_lst[6]
@@ -97,8 +105,10 @@ class DNS_proxy:
 			final_response_lst = response_lst[0:1] + success_lst[1:6] + query_lst + success_lst[16:]
 			final_response_lst[-2] = response_lst[-2]
 			final_response_lst[-1] = response_lst[-1]
-			final_rsps_len = len(final_response_lst) * 2
-			final_response_lst = [final_rsps_len] + final_response_lst
+			if rcode_index == 2:
+				final_rsps_len = len(final_response_lst) * 2
+				final_response_lst = [final_rsps_len] + final_response_lst
+
 			final_response = tuple(final_response_lst)
 			new_ans = ""
 			for val in final_response:
