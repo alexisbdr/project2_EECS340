@@ -10,19 +10,21 @@ class DNS_proxy:
 	port = 53
 	domain = 'www.abzdeqf.com'
 	host = None
+	sock_host = socket.gethostbyname(socket.gethostname())
 	CHUNK_SIZE = 4096
 	DNS_IP = '8.8.8.8' #Google IP
 
 	def __init__(self):
 		self.host = str(sys.argv[1])
+		print(self.sock_host)
 		try:
 
 			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.udp_sock.bind((self.host, self.port))
+			self.udp_sock.bind((self.sock_host, self.port))
 			self.udp_sock.setblocking(0)
 
 			self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.tcp_sock.bind((self.host, self.port))
+			self.tcp_sock.bind((self.sock_host, self.port))
 			self.tcp_sock.listen(1)
 			self.tcp_sock.setblocking(0)
 
@@ -73,8 +75,8 @@ class DNS_proxy:
 		if rcode_digit_hex == "0":
 			return message
 		elif rcode_digit_hex == "3":
-			# if len(self.domain) % 2 != 0:
-				# add 'x' to self.domain and re run
+			if len(self.domain) % 2 != 0:
+				self.domain += "x"
 			response_lst = list(response)
 			if rcode_index == 2:
 				response_lst = response_lst[1:]
