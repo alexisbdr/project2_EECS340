@@ -16,7 +16,6 @@ class DNS_proxy:
 
 	def __init__(self):
 		self.host = str(sys.argv[1])
-		print(self.sock_host)
 		try:
 
 			self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
